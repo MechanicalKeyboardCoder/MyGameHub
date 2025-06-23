@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎮 Reaction & Coin Clicker</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      padding: 2em;
+      margin: 0;
+    }
+
+    .section {
+      margin-bottom: 4em;
+    }
+
+    .box {
+      width: 300px;
+      height: 200px;
+      background-color: #444;
+      margin: 2em auto;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.5em;
+      cursor: pointer;
+    }
+
+    .coin {
+      width: 100px;
+      height: 100px;
+      background: url('https://upload.wikimedia.org/wikipedia/commons/1/11/Gold_coin_icon.png') center/cover no-repeat;
+      border-radius: 50%;
+      margin: 2em auto;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .coin-pop {
+      position: absolute;
+      color: gold;
+      font-weight: bold;
+      font-size: 1.2em;
+      animation: pop 0.6s ease-out forwards;
+      pointer-events: none;
+    }
+
+    @keyframes pop {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-50px); }
+    }
+
+    .shop, .stats, .export-import, .nav, .unlockables {
+      margin: 2em auto;
+      max-width: 400px;
+    }
+
+    .upgrade-btn, #autoToggle, .nav-btn, .export-import button {
+      display: block;
+      width: 100%;
+      margin: 0.5em auto;
+      padding: 10px;
+      font-size: 1em;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #333;
+      color: #fff;
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    .upgrade-btn:hover, #autoToggle:hover, .nav-btn:hover, .export-import button:hover {
+      background: #444;
+      transform: scale(1.05);
+    }
+
+    .nav-btn {
+      display: inline-block;
+      width: auto;
+    }
+
+    input[type="text"] {
+      width: 90%;
+      padding: 5px;
+      margin-top: 1em;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="section">
+    <h1>⏱️ Reaction Time Tester</h1>
+    <div class="box" id="reactionBox">Click to Start</div>
+    <p id="result"></p>
+    <button id="autoToggle">Enable Auto Click</button>
+  </div>
+
+  <div class="section">
+    <h1>💰 Coin Clicker</h1>
+    <div class="coin" onclick="addCoin(event)"></div>
+    <div id="coinCount">Coins: 0</div>
+    <div class="unlockables" id="unlockables"></div>
+
+    <div class="shop">
+      <h2>🛒 Upgrade Shop</h2>
+      <button class="upgrade-btn" onclick="buyAutoClicker()">🤖 Auto Clicker</button>
+      <button class="upgrade-btn" onclick="buyClickPower()">💪 Click Power</button>
+      <button class="upgrade-btn" onclick="buyGoldenCoin()">🌟 Golden Coin</button>
+      <button class="upgrade-btn" onclick="prestige()">🏆 Prestige</button>
+    </div>
+
+    <div class="stats">
+      <div id="prestigeLevel">Prestige Level: 0</div>
+      <div id="cps">Coins/sec: 0</div>
+      <div id="totalCoins">Total Coins Earned: 0</div>
+    </div>
+
+    <div class="export-import">
+      <button onclick="exportSave()">📤 Export Save</button>
+      <button onclick="importSave()">📥 Import Save</button>
+      <input id="saveData" placeholder="Paste your save code here">
+    </div>
+  </div>
+
+  <div class="nav">
+    <a href="../index.html" class="nav-btn">🏠 Home</a>
+    <a href="javascript:history.back()" class="nav-btn">🔙 Back</a>
+  </div>
+
+  <script>
+    // Reaction Time Game
+    const box = document.getElementById('reactionBox');
+    const result = document.getElementById('result');
+    const autoToggle = document.getElementById('autoToggle');
+    let startTime, timeout;
+    let autoClickEnabled = false;
+
+    function resetBox() {
+      box.style.backgroundColor = '#444';
+      box.textContent = 'Wait for green...';
+      timeout = setTimeout(() => {
+        startTime = Date.now();
+        box.style.backgroundColor = 'green';
+        box.textContent = 'CLICK!';
+        if (autoClickEnabled) setTimeout(() => box.click(), 150);
+      }, Math.random() * 3000 + 2000);
+    }
+
+    box.addEventListener('click', () => {
+      if (!startTime) {
+        result.textContent = '';
+        resetBox();
+      } else {
+        const reactionTime = Date.now() - startTime;
+        clearTimeout(timeout);
+        result.textContent = `Your reaction time: ${reactionTime} ms`;
+        box.textContent = 'Click to try again';
+        box.style.backgroundColor = '#444';
+        startTime = null;
+      }
+    });
+
+    autoToggle.addEventListener('click', () => {
+      autoClickEnabled = !autoClickEnabled;
+      autoToggle.textContent = autoClickEnabled ? 'Disable Auto Click' : 'Enable Auto Click';
+      autoToggle.style.backgroundColor = autoClickEnabled ? '#f33' : '#333';
+    });
+
+    // Coin Clicker Game
+    let coins = parseInt(localStorage.getItem("coins")) || 0;
+    let totalCoins = parseInt(localStorage.getItem("totalCoins")) || 0;
+    let autoClickers = parseInt(localStorage.getItem("autoClickers")) || 0;
+    let clickPower = parseInt(localStorage.getItem("clickPower")) || 1;
+    let goldenCoin = localStorage.getItem("goldenCoin") === "true";
+    let prestigeLevel = parseInt(localStorage.getItem("prestigeLevel")) || 0;
+
+    const coinSound = new Audio('https://assets.mixkit.co/sfx/download/mixkit-arcade-game-jump-coin-216.wav');
+    const coinCountEl = document.getElementById("coinCount");
+    const prestigeEl = document.getElementById("prestigeLevel");
+    const cpsEl = document.getElementById("cps");
+    const totalCoinsEl = document.getElementById("totalCoins");
+
+    function updateUI() {
+      coinCountEl.textContent = `Coins: ${coins}`;
+      totalCoinsEl.textContent = `Total Coins Earned: ${totalCoins}`;
+      prestigeEl.textContent = `Prestige Level: ${prestigeLevel}`;
+      cpsEl.textContent = `Coins/sec: ${autoClickers * (1 + prestigeLevel)}`;
+    }
+
+    function saveGame() {
+      localStorage.setItem("coins", coins);
+      localStorage.setItem("totalCoins", totalCoins);
+      localStorage.setItem("autoClickers", autoClickers);
+      localStorage.setItem("clickPower", clickPower);
+      localStorage.setItem("goldenCoin", goldenCoin);
+      localStorage.setItem("prestigeLevel", prestigeLevel);
+    }
+
+    function addCoin(e) {
+      let gain = clickPower + prestigeLevel;
+      if (goldenCoin && Math.random() < 0.05) gain += 50;
+      coins += gain;
+      totalCoins += gain;
+      coinSound.play();
+      updateUI();
+      saveGame();
+
+      if (e) {
+        const pop = document.createElement("div");
+        pop.textContent = "+" + gain;
+        pop.className = "coin-pop";
+        pop.style.left = e.clientX + "px";
+        pop.style.top = e.clientY + "px";
+        document.body.appendChild(pop);
+        setTimeout(() => pop.remove(), 600);
+      }
+    }
+
+    function buyAutoClicker() {
+      if (coins >= 100) {
+        coins -= 100;
+        autoClickers++;
+        updateUI();
+        saveGame();
+      }
+    }
+
+    function buyClickPower() {
+      if (coins >= 50) {
+        coins -= 50;
+        clickPower++;
+        updateUI();
+        saveGame();
+      }
+    }
+
+    function buyGoldenCoin() {
+      if (coins >= 500 && !goldenCoin) {
+        coins -= 500;
+        goldenCoin = true;
+        updateUI();
+        saveGame();
+      }
+    }
+
+    function prestige() {
+      if (coins >= 1000) {
+        coins = 0;
+        autoClickers = 0;
+        clickPower = 1;
+        goldenCoin = false;
+        prestigeLevel++;
+        updateUI();
+        saveGame();
+      }
+    }
+
+    function exportSave() {
+      const data = {
+        coins, totalCoins, autoClickers, clickPower, goldenCoin, prestigeLevel
+      };
+      document.getElementById("saveData").value = btoa(JSON.stringify(data));
+    }
+
+    function importSave() {
+      try {
+        const data = JSON.parse(atob(document.getElementById("saveData").value));
+        coins = data.coins || 0;
+        totalCoins = data.totalCoins || 0;
+        autoClickers = data.autoClickers || 0;
+        clickPower = data.clickPower || 1;
+        goldenCoin = data.goldenCoin || false;
+        prestigeLevel = data.prestigeLevel || 0;
+        updateUI();
+        saveGame();
+      } catch (e) {
+        alert("Invalid save data.");
+      }
+    }
+
+    setInterval(() => {
+      coins += autoClickers * (1 + prestigeLevel);
+      totalCoins += autoClickers * (1 + prestigeLevel);
+      updateUI();
+      saveGame();
+    }, 1000);
+
+    updateUI();
+  </script>
+</body>
+</html>

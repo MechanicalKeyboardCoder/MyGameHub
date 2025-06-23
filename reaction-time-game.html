@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reaction Time Tester</title>
+  <style>
+  .navigation-buttons {
+  margin-top: 2em;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nav-btn {
+  background: lime;
+  color: black;
+  padding: 10px 15px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.nav-btn:hover {
+  background: #c3ff00;
+}
+
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background-color: #111;
+      color: white;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .box {
+      width: 300px;
+      height: 200px;
+      background-color: #444;
+      margin: 2em auto;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5em;
+      cursor: pointer;
+      color: white;
+    }
+
+    .controls, .stats {
+      margin-top: 1.5em;
+    }
+
+    .chart-bar {
+      height: 20px;
+      background: lime;
+      margin: 4px auto;
+      width: 0;
+      transition: width 0.5s;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      margin: 0 8px;
+      cursor: pointer;
+      border-radius: 6px;
+      border: none;
+    }
+
+    .light-mode {
+      background: #eee;
+      color: #111;
+    }
+
+    .light-mode .box {
+      background-color: #ddd;
+      color: #111;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>⏱️ Reaction Time Tester</h1>
+  <div class="box" id="reactionBox">Click to Start</div>
+
+  <p id="countdown"></p>
+  <p id="result"></p>
+  <p id="average"></p>
+  <p id="bestTime"></p>
+
+  <div class="stats">
+    <h3>📊 Last 5 Times:</h3>
+    <div id="chart"></div>
+
+    <h3>🏅 Leaderboard (Top 3)</h3>
+    <ol id="leaderboard"></ol>
+  </div>
+
+  <div class="controls">
+    <button id="themeToggle">🌗 Toggle Dark/Light</button>
+    <button onclick="resetAll()">🔄 Reset All</button>
+  </div>
+
+  <audio id="successSound" src="https://assets.mixkit.co/sfx/download/mixkit-success-alert-2568.wav" preload="auto"></audio>
+
+  <script>
+    const box = document.getElementById('reactionBox');
+    const countdown = document.getElementById('countdown');
+    const result = document.getElementById('result');
+    const averageText = document.getElementById('average');
+    const bestTimeText = document.getElementById('bestTime');
+    const chart = document.getElementById('chart');
+    const leaderboard = document.getElementById('leaderboard');
+    const successSound = document.getElementById('successSound');
+
+    let times = [];
+    let startTime, timeout;
+    let bestTime = localStorage.getItem("bestReactionTime") || null;
+    let leaderboardTimes = JSON.parse(localStorage.getItem("reactionLeaderboard") || "[]");
+
+    if (bestTime) bestTimeText.textContent = `🏆 Best Time: ${bestTime} ms`;
+    updateLeaderboard();
+
+    function resetBoxWithCountdown() {
+      let count = 3;
+      countdown.textContent = `Get ready in ${count}...`;
+      const countdownInterval = setInterval(() => {
+        count--;
+        if (count > 0) {
+          countdown.textContent = `Get ready in ${count}...`;
+        } else {
+          clearInterval(countdownInterval);
+          countdown.textContent = '';
+          box.style.backgroundColor = '#444';
+          box.textContent = 'Wait for green...';
+
+          timeout = setTimeout(() => {
+            startTime = Date.now();
+            box.style.backgroundColor = 'green';
+            box.textContent = 'CLICK!';
+          }, Math.random() * 3000 + 2000);
+        }
+      }, 1000);
+    }
+
+    box.addEventListener('click', () => {
+      if (!startTime) {
+        // First click to start test
+        result.textContent = '';
+        averageText.textContent = '';
+        box.textContent = '';
+        resetBoxWithCountdown();
+      } else {
+        const reactionTime = Date.now() - startTime;
+        clearTimeout(timeout);
+        times.push(reactionTime);
+        if (times.length > 5) times.shift(); // keep last 5
+
+        const avg = Math.round(times.reduce((a, b) => a + b) / times.length);
+        result.textContent = `⏱️ Your reaction time: ${reactionTime} ms`;
+        averageText.textContent = `📊 Average: ${avg} ms`;
+
+        if (!bestTime || reactionTime < bestTime) {
+          bestTime = reactionTime;
+          localStorage.setItem("bestReactionTime", bestTime);
+          bestTimeText.textContent = `🏆 Best Time: ${bestTime} ms`;
+        }
+
+        updateChart();
+        updateLeaderboardWith(reactionTime);
+        successSound.play();
+
+        box.textContent = 'Click to try again';
+        box.style.backgroundColor = '#444';
+        startTime = null;
+      }
+    });
+
+    function updateChart() {
+      chart.innerHTML = '';
+      times.forEach(t => {
+        const bar = document.createElement('div');
+        bar.className = 'chart-bar';
+        bar.style.width = `${Math.min(t / 3, 300)}px`; // scaled bar
+        bar.textContent = `${t} ms`;
+        chart.appendChild(bar);
+      });
+    }
+
+    function updateLeaderboardWith(newTime) {
+      leaderboardTimes.push(newTime);
+      leaderboardTimes.sort((a, b) => a - b);
+      leaderboardTimes = leaderboardTimes.slice(0, 3); // top 3
+      localStorage.setItem("reactionLeaderboard", JSON.stringify(leaderboardTimes));
+      updateLeaderboard();
+    }
+
+    function updateLeaderboard() {
+      leaderboard.innerHTML = '';
+      leaderboardTimes.forEach((t, i) => {
+        const li = document.createElement('li');
+        li.textContent = `${i + 1}. ${t} ms`;
+        leaderboard.appendChild(li);
+      });
+    }
+
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      document.body.classList.toggle('light-mode');
+    });
+
+    function resetAll() {
+      localStorage.removeItem("bestReactionTime");
+      localStorage.removeItem("reactionLeaderboard");
+      times = [];
+      bestTime = null;
+      leaderboardTimes = [];
+      chart.innerHTML = '';
+      leaderboard.innerHTML = '';
+      result.textContent = '';
+      averageText.textContent = '';
+      bestTimeText.textContent = '';
+      alert("All data reset!");
+    }
+  </script>
+  <!-- Navigation Buttons -->
+  <div class="navigation-buttons">
+    <a href="http://127.0.0.1:5500/" class="nav-btn">🏠 Home</a>
+    <a href="javascript:history.back()" class="nav-btn">🔙 Back</a>
+  </div>
+</body>
+</html>
