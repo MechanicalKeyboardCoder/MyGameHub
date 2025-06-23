@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🧠 Quiz Game</title>
+  <style>
+.navigation-buttons {
+  margin-top: 2em;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.nav-btn {
+  background: lime;
+  color: black;
+  padding: 10px 15px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.nav-btn:hover {
+  background: #c3ff00;
+}
+
+    body {
+      font-family: sans-serif;
+      background: #111;
+      color: #fff;
+      text-align: center;
+      padding: 2em;
+    }
+
+    #quiz-container {
+      max-width: 600px;
+      margin: auto;
+      background: #222;
+      padding: 2em;
+      border-radius: 10px;
+      box-shadow: 0 0 10px lime;
+    }
+
+    .question {
+      font-size: 1.3em;
+      margin-bottom: 1em;
+    }
+
+    .choices button {
+      display: block;
+      width: 100%;
+      margin: 0.5em 0;
+      padding: 10px;
+      font-size: 1em;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background-color: #333;
+      color: #fff;
+    }
+
+    .choices button:hover {
+      background-color: #444;
+    }
+
+    #feedback {
+      margin-top: 1em;
+      font-size: 1.1em;
+    }
+
+    #score, #highScore {
+      margin-top: 1em;
+    }
+
+    #startBtn, #restartBtn {
+      margin-top: 2em;
+      padding: 10px 20px;
+      font-size: 1em;
+      cursor: pointer;
+      background: lime;
+      color: black;
+      border: none;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🧠 Quiz Challenge</h1>
+
+  <div id="quiz-container">
+    <div id="questionBox">
+      <div class="question" id="question">Click "Start Quiz" to begin!</div>
+      <div class="choices" id="choices"></div>
+      <div id="feedback"></div>
+    </div>
+
+    <div id="score"></div>
+    <div id="highScore"></div>
+
+    <button id="startBtn">Start Quiz</button>
+    <button id="restartBtn" style="display: none;">Restart</button>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        question: "What is the capital of France?",
+        choices: ["Berlin", "Madrid", "Paris", "Rome"],
+        answer: "Paris"
+      },
+      {
+        question: "Which planet is known as the Red Planet?",
+        choices: ["Earth", "Venus", "Mars", "Jupiter"],
+        answer: "Mars"
+      },
+      {
+        question: "What is 9 + 10?",
+        choices: ["19", "21", "18", "20"],
+        answer: "19"
+      },
+      {
+        question: "Which language runs in a web browser?",
+        choices: ["Python", "Java", "C++", "JavaScript"],
+        answer: "JavaScript"
+      }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let highScore = localStorage.getItem("quizHighScore") || 0;
+
+    const questionEl = document.getElementById("question");
+    const choicesEl = document.getElementById("choices");
+    const feedbackEl = document.getElementById("feedback");
+    const scoreEl = document.getElementById("score");
+    const highScoreEl = document.getElementById("highScore");
+    const startBtn = document.getElementById("startBtn");
+    const restartBtn = document.getElementById("restartBtn");
+
+    highScoreEl.textContent = `🏆 High Score: ${highScore}`;
+
+    startBtn.addEventListener("click", startQuiz);
+    restartBtn.addEventListener("click", startQuiz);
+
+    function startQuiz() {
+      currentQuestion = 0;
+      score = 0;
+      startBtn.style.display = "none";
+      restartBtn.style.display = "none";
+      feedbackEl.textContent = "";
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const q = questions[currentQuestion];
+      questionEl.textContent = q.question;
+      choicesEl.innerHTML = "";
+
+      q.choices.forEach(choice => {
+        const btn = document.createElement("button");
+        btn.textContent = choice;
+        btn.onclick = () => checkAnswer(choice);
+        choicesEl.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(choice) {
+      const correct = questions[currentQuestion].answer;
+      if (choice === correct) {
+        feedbackEl.textContent = "✅ Correct!";
+        score++;
+      } else {
+        feedbackEl.textContent = `❌ Wrong! The correct answer was "${correct}".`;
+      }
+
+      currentQuestion++;
+      if (currentQuestion < questions.length) {
+        setTimeout(() => {
+          feedbackEl.textContent = "";
+          showQuestion();
+        }, 1000);
+      } else {
+        endQuiz();
+      }
+    }
+
+    function endQuiz() {
+      questionEl.textContent = `🎉 You scored ${score} out of ${questions.length}`;
+      choicesEl.innerHTML = "";
+      scoreEl.textContent = `Your Score: ${score}`;
+
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem("quizHighScore", highScore);
+        highScoreEl.textContent = `🏆 New High Score: ${highScore}`;
+      }
+
+      restartBtn.style.display = "inline-block";
+    }
+  </script>
+    <!-- Navigation Buttons -->
+  <div class="navigation-buttons">
+    <a href="http://127.0.0.1:5500/index.html" class="nav-btn">🏠 Home</a>
+    <a href="javascript:history.back()" class="nav-btn">🔙 Back</a>
+    <a href="reaction-time-game.html" class="nav-btn">⏱️ Reaction Game</a>
+    <a href="aim-trainer.html" class="nav-btn">🎯 Aim Trainer</a>
+  </div>
+
+</body>
+</html>
